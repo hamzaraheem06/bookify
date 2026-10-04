@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: bookpilot
+      POSTGRES_USER: bookpilot
+      POSTGRES_PASSWORD: bookpilot
+    ports:
+      - "5433:5432"
+    volumes:
+      # Keep the V1 PDF-to-audiobook schema separate from older catalog data.
+      - bookpilot_runtime_pgdata:/var/lib/postgresql/data
+
+volumes:
+  bookpilot_runtime_pgdata:

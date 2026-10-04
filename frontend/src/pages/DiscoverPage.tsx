@@ -1,0 +1,7 @@
+import { Search, UploadCloud } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { useState } from 'react';
+import { useBooks } from '../hooks/useBooks';
+import { BookCard } from '../components/books/BookCard';
+export function DiscoverPage() { const location=useLocation(); const [query,setQuery]=useState(new URLSearchParams(location.search).get('q')||''); const authenticated=Boolean(localStorage.getItem('bookpilot_token')); const {data=[],isLoading}=useBooks(); const results=query?data.filter(book=>book.title.toLowerCase().includes(query.toLowerCase())):data; return <><div className="page-title"><div><div className="eyebrow">THE BOOKPILOT EXPERIENCE</div><h1>Discover your next listen</h1></div></div><div className="discover-search"><Search size={18}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search your books by title"/></div>{authenticated&&isLoading?<div className="state">Loading your catalog...</div>:authenticated&&results.length?<div className="book-grid discover-grid">{results.map(book=><BookCard book={book} key={book.id}/>)}</div>:<div className="discover-empty"><div className="eyebrow">A QUIET PLACE FOR GOOD STORIES</div><h2>Your personal catalog starts with a PDF.</h2><p>Discover is ready for the books you make. Upload a document and BookPilot will turn its chapters into a listening experience.</p><Link className="button primary" to={authenticated?'/upload':'/signup'}><UploadCloud size={16}/> {authenticated?'Create an audiobook':'Get started'}</Link></div>}</> }
+

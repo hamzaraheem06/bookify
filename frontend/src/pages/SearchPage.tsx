@@ -1,0 +1,6 @@
+import { Search } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { searchBooks } from '../api/search';
+import { BookCard } from '../components/books/BookCard';
+export function SearchPage() { const query = new URLSearchParams(useLocation().search).get('q') || ''; const authenticated = Boolean(localStorage.getItem('bookpilot_token')); const { data = [], isLoading, error } = useQuery({ queryKey: ['search', query], queryFn: () => searchBooks(query), enabled: Boolean(query) && authenticated }); return <><div className="page-title"><div><div className="eyebrow">SEARCH RESULTS</div><h1>{query ? `Results for “${query}”` : 'Search BookPilot'}</h1></div></div>{isLoading ? <div className="state">Searching...</div> : error ? <div className="state">Search failed. Check that the backend is running.</div> : data.length ? <div className="book-grid discover-grid">{data.map(book => <BookCard book={book} key={book.id} />)}</div> : <div className="empty"><Search size={32} /><h2>{query ? (authenticated ? 'No stories found' : 'Log in to search your library') : 'Start searching'}</h2><p>{authenticated ? 'Try another title, author, or phrase.' : 'Sign in to search the books in your library.'}</p></div>}</>; }

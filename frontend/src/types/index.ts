@@ -1,0 +1,3 @@
+export type Author = { id: number; name: string; bio: string };
+export type Chapter = { id: number; book_id?: number; chapter_number?: number; sequence_number?: number; title: string; content?: string; included?: boolean; status?: string; audio_url: string | null; duration_seconds: number };
+export type Book = { id: number; title: string; description?: string; cover_url?: string; language?: string; publication_year?: number; source?: string; category?: string; author?: Author; status?: string; error_message?: string | null; created_at?: string; generation_progress?: number; chapters: Chapter[] };

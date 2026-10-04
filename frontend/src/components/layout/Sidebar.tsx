@@ -1,0 +1,3 @@
+import { Compass, Headphones, Home as HomeIcon, Library, UploadCloud, Search } from 'lucide-react';
+import { Link, NavLink } from 'react-router-dom';
+export function Sidebar() { return <aside className="sidebar"><Link to="/" className="brand"><span className="brand-mark"><Headphones size={19} /></span>book<span>pilot</span></Link><nav><NavLink to="/"><HomeIcon size={18} />Home</NavLink><NavLink to="/discover"><Compass size={18} />Discover</NavLink><NavLink to="/search"><Search size={18} />Search</NavLink><NavLink to="/library"><Library size={18} />My library</NavLink><NavLink to="/upload"><UploadCloud size={18} />Upload PDF</NavLink></nav><div className="sidebar-note"><span>YOUR NEXT CHAPTER</span><p>Stories worth making time for.</p></div></aside>; }

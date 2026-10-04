@@ -1,0 +1,5 @@
+import { Link } from 'react-router-dom';
+import type { Book } from '../../types';
+import type { HistoryItem } from '../../api/progress';
+export function Cover({ book, size = 'normal' }: { book: Book; size?: 'normal' | 'large' }) { return book.cover_url ? <img className={`cover ${size}`} src={book.cover_url} alt={book.title} /> : <div className={`cover ${size} cover-placeholder`} aria-label={book.title}><span>{book.title.slice(0, 1).toUpperCase()}</span></div>; }
+export function BookCard({ book, progress }: { book: Book; progress?: Pick<HistoryItem, 'percentage' | 'chapter_title'> }) { return <Link to={`/books/${book.id}`} className="book-card"><Cover book={book} /><div className="book-info"><h3>{book.title}</h3><p>{book.author?.name || `${book.chapters.length} chapters · ${book.status || 'In progress'}`}</p>{progress && <><div className="card-progress"><span style={{ width: `${progress.percentage}%` }} /></div><small>{progress.percentage}% complete{progress.chapter_title ? ` · ${progress.chapter_title}` : ''}</small></>}</div></Link>; }
