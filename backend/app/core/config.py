@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     storage_root: Path = ROOT / "storage"
     max_upload_bytes: int = 25 * 1024 * 1024
     tts_provider: str = "mock"
-    cors_origins: str = "http://localhost:5173"
+    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
     model_config = SettingsConfigDict(env_file=ROOT / ".env", extra="ignore")
 
     @property

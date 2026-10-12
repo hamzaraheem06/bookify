@@ -1,15 +1,37 @@
-import { FormEvent, useState, type ReactNode } from 'react';
+import { FormEvent, useEffect, useState, type ReactNode } from 'react';
 import { Link, Navigate, Route, Routes, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Headphones } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { Layout } from '../components/layout/Layout';
 import { DiscoverPage } from '../pages/DiscoverPage';
 import { LibraryPage } from '../pages/LibraryPage';
 import { BookPage } from '../pages/BookPage';
 import { UploadPage } from '../pages/UploadPage';
 import { SearchPage } from '../pages/SearchPage';
+import { HomePage } from '../pages/HomePage';
 import { api } from '../api/client';
 const tokenKey = 'bookpilot_token';
+function RootPage() {
+  const token = localStorage.getItem(tokenKey);
+  const session = useQuery({ queryKey: ['session', token], queryFn: () => api<{ user_id: number }>('/auth/me'), enabled: Boolean(token), retry: false });
+  useEffect(() => { if (token && session.isError) localStorage.removeItem(tokenKey); }, [token, session.isError]);
+  if (!token || session.isError) return <LandingPage/>;
+  if (session.isLoading) return <div className="state">Loading your BookPilot...</div>;
+  return <Layout><HomePage/></Layout>;
+}
 function LandingPage() { return <main className="landing"><nav className="landing-nav"><Link className="brand" to="/"><span className="brand-mark"><Headphones size={19}/></span>book<span>pilot</span></Link><div><Link to="/discover">Discover</Link><Link to="/login">Log in</Link><Link className="button primary" to="/signup">Get started <ArrowRight size={15}/></Link></div></nav><section className="landing-hero"><div><p className="eyebrow">YOUR BOOKS, YOUR WAY</p><h1>Turn your books<br/><em>into audiobooks.</em></h1><p>BookPilot transforms PDFs into a listening experience. Upload a book, review its chapters, and press play when it is ready.</p><div className="landing-actions"><Link className="button primary" to="/signup">Create your first audiobook <ArrowRight size={16}/></Link><Link className="text-link" to="/discover">Explore BookPilot</Link></div></div><div className="landing-art"><div className="art-glow"/><div className="paper-card"><span>BOOKPILOT</span><strong>The<br/><i>listening</i><br/>edition</strong><small>PDF → AUDIOBOOK</small></div></div></section><section className="landing-how"><p className="eyebrow">A SIMPLE WORKFLOW</p><h2>From page to play in three steps.</h2><div className="how-grid"><div><b>01</b><h3>Upload a PDF</h3><p>Bring the books, notes, and documents you already love.</p></div><div><b>02</b><h3>Review chapters</h3><p>BookPilot finds the structure so you can shape it your way.</p></div><div><b>03</b><h3>Listen anywhere</h3><p>Generate chapter audio and keep your place as you go.</p></div></div></section><footer>book<span>pilot</span><small>Thoughtful listening for the books you already own.</small></footer></main> }
 function AuthPage({ mode }: { mode: 'login' | 'signup' }) { const nav=useNavigate(); const [params]=useSearchParams(); const [error,setError]=useState(''); const [email,setEmail]=useState(''); const [password,setPassword]=useState(''); const [name,setName]=useState(''); async function submit(e:FormEvent){e.preventDefault();try{const r=await api<{token:string}>(`/auth/${mode==='signup'?'register':'login'}`,{method:'POST',body:JSON.stringify({email,password,display_name:name||'BookPilot listener'})});localStorage.setItem(tokenKey,r.token);nav(params.get('next') || '/library')}catch(x){setError(x instanceof Error?x.message:'Could not authenticate')}} return <main className="auth-shell"><Link className="auth-back brand" to="/"><span className="brand-mark"><Headphones size={19}/></span>book<span>pilot</span></Link><div className="auth-card"><p className="eyebrow">{mode==='signup'?'START LISTENING':'WELCOME BACK'}</p><h1>{mode==='signup'?'Make room for more stories.':'Pick up where you left off.'}</h1><p>{mode==='signup'?'Create an account to turn your PDFs into personal audiobooks.':'Your library and listening progress are waiting.'}</p><form onSubmit={submit}>{mode==='signup'&&<input placeholder="Your name" value={name} onChange={e=>setName(e.target.value)} required/>}<input type="email" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} required/><input type="password" placeholder="Password (8+ characters)" value={password} onChange={e=>setPassword(e.target.value)} minLength={8} required/><button className="button primary">{mode==='signup'?'Create account':'Log in'} <ArrowRight size={15}/></button></form>{error&&<p className="error">{error}</p>}<p className="auth-switch">{mode==='signup'?'Already have an account?':'New to BookPilot?'} <Link to={mode==='signup'?'/login':'/signup'}>{mode==='signup'?'Log in':'Create an account'}</Link></p></div></main> }
 function Protected({ children }: { children: ReactNode }) { const location=useLocation(); return localStorage.getItem(tokenKey) ? <>{children}</> : <Navigate to={`/login?next=${encodeURIComponent(location.pathname)}`} replace/> }
-export function App() { return <Routes><Route path="/" element={<LandingPage/>}/><Route path="/login" element={<AuthPage mode="login"/>}/><Route path="/signup" element={<AuthPage mode="signup"/>}/><Route path="/discover" element={<Layout><DiscoverPage/></Layout>}/><Route path="/search" element={<Layout><SearchPage/></Layout>}/><Route element={<Protected><Layout><Routes><Route path="/library" element={<LibraryPage/>}/><Route path="/upload" element={<UploadPage/>}/><Route path="/books/:id" element={<BookPage/>}/><Route path="/books/:id/review" element={<BookPage review/>}/><Route path="/books/:id/listen" element={<BookPage/>}/></Routes></Layout></Protected>}/><Route path="*" element={<Navigate to="/" replace/>}/></Routes> }
+export function App() { return <Routes>
+  <Route path="/" element={<RootPage/>}/>
+  <Route path="/login" element={<AuthPage mode="login"/>}/>
+  <Route path="/signup" element={<AuthPage mode="signup"/>}/>
+  <Route path="/discover" element={<Layout><DiscoverPage/></Layout>}/>
+  <Route path="/search" element={<Layout><SearchPage/></Layout>}/>
+  <Route path="/library" element={<Protected><Layout><LibraryPage/></Layout></Protected>}/>
+  <Route path="/upload" element={<Protected><Layout><UploadPage/></Layout></Protected>}/>
+  <Route path="/books/:id" element={<Protected><Layout><BookPage/></Layout></Protected>}/>
+  <Route path="/books/:id/review" element={<Protected><Layout><BookPage review/></Layout></Protected>}/>
+  <Route path="/books/:id/listen" element={<Protected><Layout><BookPage/></Layout></Protected>}/>
+  <Route path="*" element={<Navigate to="/" replace/>}/>
+</Routes> }

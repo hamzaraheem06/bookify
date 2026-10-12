@@ -22,10 +22,13 @@ def normalize_text(text: str) -> str:
     text = re.sub(r"(?<!\n)\n(?!\n)", " ", text)
     return re.sub(r" +", " ", text).strip()
 
-def parse_pdf(path: Path) -> ParsedDocument:
+def parse_pdf(path: Path, fallback_title: str | None = None) -> ParsedDocument:
     reader = PdfReader(str(path))
-    pages = [normalize_text(page.extract_text() or "") for page in reader.pages]
-    title = (reader.metadata.title if reader.metadata and reader.metadata.title else path.stem).strip()
+    # Keep extracted line boundaries long enough for heading detection. The
+    # chapter chunker normalizes wrapped text after structure has been found.
+    pages = [re.sub(r"\n{3,}", "\n\n", re.sub(r"[ \t]+", " ", page.extract_text() or "")).strip() for page in reader.pages]
+    title_fallback = Path(fallback_title).stem if fallback_title else path.stem
+    title = (reader.metadata.title if reader.metadata and reader.metadata.title else title_fallback).strip()
     return ParsedDocument(title=title or "Untitled document", pages=pages)
 
 HEADING = re.compile(r"^(chapter\s+(?:\d+|[ivxlcdm]+)|(?:\d+\.)+\s+.+|part\s+.+)$", re.I)
@@ -61,6 +64,16 @@ def chunk_text(text: str, limit: int = 1800) -> list[str]:
     return chunks
 
 def mock_wav(text: str) -> tuple[bytes, float]:
+    # Reuse the bundled, non-silent demo voice clips for an offline player
+    # preview. This keeps mock mode useful without a provider account.
+    demos = Path(__file__).resolve().parents[3] / "frontend" / "public" / "audio" / "book-1"
+    samples = sorted(demos.glob("*.wav"))
+    if samples:
+        sample = samples[int(hashlib.sha256(text.encode()).hexdigest(), 16) % len(samples)]
+        data = sample.read_bytes()
+        with wave.open(BytesIO(data), "rb") as audio:
+            duration = audio.getnframes() / audio.getframerate()
+        return data, duration
     duration = max(1.0, min(30.0, len(text) / 18))
     frames = int(8000 * duration)
     output = BytesIO()

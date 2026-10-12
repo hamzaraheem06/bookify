@@ -46,7 +46,21 @@ def generate(book_id: int, user: User = Depends(current_user), db: Session = Dep
     book = owned(db, user.id, book_id)
     if book.status not in (BookStatus.READY_FOR_GENERATION, BookStatus.COMPLETED, BookStatus.FAILED): raise HTTPException(409, "Book is not ready for generation")
     db.add(ProcessingJob(book_id=book.id, job_type=JobType.GENERATION, status=JobStatus.QUEUED)); book.status = BookStatus.GENERATING; db.commit(); return serialize(owned(db, user.id, book_id))
+
+@router.post("/{book_id}/retry", response_model=BookOut)
+def retry(book_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    book = owned(db, user.id, book_id)
+    job = db.scalar(select(ProcessingJob).where(ProcessingJob.book_id == book.id, ProcessingJob.status == JobStatus.FAILED).order_by(ProcessingJob.id.desc()))
+    if not job or book.status != BookStatus.FAILED: raise HTTPException(409, "This book has no failed job to retry")
+    job.status, job.current_stage, job.progress_percent, job.error_message = JobStatus.QUEUED, "queued", 0, None
+    book.status = BookStatus.UPLOADED if job.job_type == JobType.INGESTION else BookStatus.GENERATING
+    book.error_message = None
+    db.commit()
+    return serialize(owned(db, user.id, book_id))
+
 @router.delete("/{book_id}", status_code=204)
 def delete_book(book_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)):
-    book = owned(db, user.id, book_id); source = book.source_asset.storage_key if book.source_asset else None; db.delete(book); db.commit();
-    if source: storage.delete(source)
+    book = owned(db, user.id, book_id)
+    keys = ([book.source_asset.storage_key] if book.source_asset else []) + [chapter.audio_asset.storage_key for chapter in book.chapters if chapter.audio_asset]
+    db.delete(book); db.commit()
+    for key in keys: storage.delete(key)

@@ -35,7 +35,8 @@ def history_item(row: PlaybackProgress) -> HistoryOut:
     completed = row.position_seconds
     if row.chapter:
         completed += sum((chapter.audio_asset.duration_seconds if chapter.audio_asset else 0) for chapter in book.chapters if chapter.sequence_number < row.chapter.sequence_number)
-    return HistoryOut(book_id=book.id, title=book.title, chapter_id=row.chapter_id, chapter_title=row.chapter.title if row.chapter else None, position_seconds=row.position_seconds, completed_seconds=completed, total_seconds=total, percentage=(completed / total * 100) if total else 0, last_listened_at=row.updated_at.isoformat())
+    percentage = min(100.0, max(0.0, completed / total * 100)) if total else 0
+    return HistoryOut(book_id=book.id, title=book.title, chapter_id=row.chapter_id, chapter_title=row.chapter.title if row.chapter else None, position_seconds=row.position_seconds, completed_seconds=completed, total_seconds=total, percentage=percentage, last_listened_at=row.updated_at.isoformat())
 
 @router.get("/history", response_model=list[HistoryOut])
 def get_history(user: User = Depends(current_user), db: Session = Depends(get_db)):

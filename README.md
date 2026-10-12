@@ -30,7 +30,7 @@ uvicorn app.main:app --reload
 
 In another terminal run `cd frontend; npm install; npm run dev`. In a third terminal run `cd backend; .\.venv\Scripts\Activate.ps1; $env:PYTHONPATH='.'; python worker.py`. Open `http://localhost:5173`, register, upload a PDF, wait for ingestion, review/save chapters, then start generation.
 
-Mock generation produces valid silent WAV files for local development; it is a development fallback, not natural speech.
+Mock generation uses the bundled short demo voice clips so playback can be exercised offline without credentials. These clips are playback fixtures and do not narrate the uploaded chapter text; connect a real TTS provider when text-matched narration is needed.
 
 ## Environment variables
 
